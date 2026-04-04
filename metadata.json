@@ -1,0 +1,8 @@
+{
+  "name": "Honeymoon - Wedding Invitation SaaS",
+  "description": "Nền tảng tạo thiệp cưới online chuyên nghiệp với tính năng quản lý khách mời (RSVP) và nhận tiền mừng qua QR Banking.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
