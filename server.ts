@@ -4,9 +4,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from './src/lib/prisma.ts';
+import { prisma } from './api/lib/prisma.ts';
 
-import apiRouter from './src/api-router.ts';
+import apiRouter from './api/api-router.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

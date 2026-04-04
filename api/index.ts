@@ -1,5 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
-import apiRouter from '../src/api-router.ts';
+import apiRouter from './api-router.ts';
 
 const app = express();
 app.use(express.json());
