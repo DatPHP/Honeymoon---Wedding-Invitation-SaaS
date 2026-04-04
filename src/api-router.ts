@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from './lib/prisma';
+import { prisma } from './lib/prisma.ts';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
