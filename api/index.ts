@@ -1,16 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  });
-
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+import { prisma } from '../src/lib/prisma.ts';
 
 const app = express();
 app.use(express.json());
@@ -76,12 +67,25 @@ app.post('/api/projects/create', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     
+    // Find or create a default template to avoid foreign key constraint error
+    let template = await prisma.template.findFirst();
+    if (!template) {
+      template = await prisma.template.create({
+        data: {
+          id: 'default-template-id',
+          name: 'Default Template',
+          thumbnail: 'https://picsum.photos/seed/wedding/400/300',
+          config: {},
+        }
+      });
+    }
+
     const project = await prisma.weddingProject.create({
       data: {
         userId: decoded.userId,
         title: req.body.title,
         slug: req.body.slug,
-        templateId: 'default-template-id',
+        templateId: template.id,
         sections: {
           create: [
             { type: 'hero', content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' }, order: 0 }
@@ -152,6 +156,16 @@ app.post('/api/rsvp', async (req, res) => {
     res.json(rsvp);
   } catch (error) {
     res.status(400).json({ error: 'Failed to submit RSVP' });
+  }
+});
+
+// Templates: Get All
+app.get('/api/templates', async (req, res) => {
+  try {
+    const templates = await prisma.template.findMany();
+    res.json(templates);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch templates' });
   }
 });
 
