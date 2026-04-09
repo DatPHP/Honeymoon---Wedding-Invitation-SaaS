@@ -4,10 +4,11 @@ import { cn, formatDate } from '../../lib/utils';
 
 export default function PublicWedding({ project }: any) {
   if (!project) return null;
+  const sections = Array.isArray(project.sections) ? project.sections : [];
 
   return (
     <div className="min-h-screen bg-white font-sans selection:bg-rose-100 selection:text-rose-600">
-      {project.sections.map((section: any) => (
+      {sections.map((section: any) => (
         <SectionRenderer key={section.id} section={section} />
       ))}
     </div>

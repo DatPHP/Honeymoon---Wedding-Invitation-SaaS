@@ -17,17 +17,36 @@ import {
 import PublicWedding from '../Wedding/PublicWedding';
 import { cn } from '../../lib/utils';
 
+function normalizeProject(raw: any) {
+  if (!raw) {
+    return {
+      title: 'Đám cưới của chúng mình',
+      sections: [
+        {
+          id: '1',
+          type: 'hero',
+          content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' }
+        }
+      ]
+    };
+  }
+  // Ensure sections is always an array
+  return {
+    ...raw,
+    sections: Array.isArray(raw.sections) && raw.sections.length > 0
+      ? raw.sections
+      : [
+          {
+            id: '1',
+            type: 'hero',
+            content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' }
+          }
+        ]
+  };
+}
+
 export default function Editor({ project: initialProject, setView }: any) {
-  const [project, setProject] = useState(initialProject || {
-    title: 'Đám cưới của chúng mình',
-    sections: [
-      {
-        id: '1',
-        type: 'hero',
-        content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' }
-      }
-    ]
-  });
+  const [project, setProject] = useState(() => normalizeProject(initialProject));
   const [activeSectionId, setActiveSectionId] = useState(project.sections[0]?.id);
   const [isPreview, setIsPreview] = useState(false);
 
@@ -159,17 +178,25 @@ export default function Editor({ project: initialProject, setView }: any) {
                 <div className="border-t pt-6">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Cấu hình: {activeSection.type}</h3>
                   <div className="mt-4 space-y-4">
-                    {Object.keys(activeSection.content).map(key => (
-                      <div key={key}>
-                        <label className="text-xs font-bold text-slate-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
-                        <input 
-                          type="text"
-                          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:ring-rose-500"
-                          value={activeSection.content[key]}
-                          onChange={(e) => updateSectionContent(activeSection.id, { [key]: e.target.value })}
-                        />
-                      </div>
-                    ))}
+                    {Object.keys(activeSection.content).map(key => {
+                      const value = activeSection.content[key];
+                      const isComplex = typeof value === 'object' || Array.isArray(value);
+                      return (
+                        <div key={key}>
+                          <label className="text-xs font-bold text-slate-500 capitalize">{key.replace(/([A-Z])/g, ' $1')}</label>
+                          {isComplex ? (
+                            <p className="mt-1 rounded-lg border border-dashed border-slate-200 px-3 py-2 text-xs text-slate-400 italic">Dữ liệu phức tạp — chỉnh sửa trực tiếp trên xem trước</p>
+                          ) : (
+                            <input 
+                              type="text"
+                              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:ring-rose-500"
+                              value={String(value ?? '')}
+                              onChange={(e) => updateSectionContent(activeSection.id, { [key]: e.target.value })}
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -208,7 +235,16 @@ function SectionIcon({ type }: { type: string }) {
 function getDefaultContent(type: string) {
   switch (type) {
     case 'hero': return { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' };
-    case 'story': return { title: 'Lần đầu gặp gỡ', description: 'Kể lại câu chuyện của bạn...' };
+    case 'story': return {
+      items: [
+        {
+          date: '01/01/2023',
+          title: 'Lần đầu gặp gỡ',
+          description: 'Kể lại câu chuyện của bạn...',
+          image: 'https://picsum.photos/seed/story1/400/400'
+        }
+      ]
+    };
     case 'gallery': return { images: ['https://picsum.photos/seed/1/800/800', 'https://picsum.photos/seed/2/800/800'] };
     case 'rsvp': return { title: 'Bạn sẽ đến chứ?' };
     case 'gift': return { accounts: [{ bankName: 'Vietcombank', accountNumber: '123456789', accountName: 'NGUYEN VAN A', qrCode: 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Example' }] };

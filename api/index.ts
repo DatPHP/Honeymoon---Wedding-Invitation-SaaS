@@ -61,7 +61,10 @@ app.get('/api/projects', async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
     const projects = await prisma.weddingProject.findMany({
       where: { userId: decoded.userId },
-      include: { template: true },
+      include: { 
+        template: true,
+        sections: { orderBy: { order: 'asc' } }
+      },
     });
     res.json(projects);
   } catch (error) {
