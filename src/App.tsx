@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
-import { Heart, Plus, LogOut, Layout as LayoutIcon, Users, Gift, Settings } from 'lucide-react';
+import { Heart, Plus, LogOut, Layout as LayoutIcon, Users, Gift, Settings, Trash2 } from 'lucide-react';
 import Editor from './components/Editor/Editor';
 import { cn } from './lib/utils';
 
@@ -254,6 +254,27 @@ function Dashboard({ user, setView, setSelectedProject }: any) {
     }
   };
 
+  const handleDeleteProject = async (projectId: string) => {
+    const isConfirm = window.confirm("Are you sure you want to delete this wedding template? This action cannot be undone.");
+    if (!isConfirm) return;
+
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProjects(projects.filter((p: any) => p.id !== projectId));
+      } else {
+        alert(data.error || 'Failed to delete project');
+      }
+    } catch (err) {
+      alert('Đã có lỗi xảy ra');
+    }
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }}
@@ -301,6 +322,13 @@ function Dashboard({ user, setView, setSelectedProject }: any) {
                   </button>
                   <button className="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50">
                     <Settings size={18} />
+                  </button>
+                  <button 
+                    onClick={() => handleDeleteProject(p.id)}
+                    className="rounded-lg border border-rose-200 p-2 text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Xóa dự án"
+                  >
+                    <Trash2 size={18} />
                   </button>
                 </div>
               </div>

@@ -173,6 +173,47 @@ app.post('/api/rsvp', async (req, res) => {
   }
 });
 
+// Projects: Delete
+app.delete('/api/projects/:id', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const projectId = req.params.id;
+
+    const project = await prisma.weddingProject.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project) {
+      return res.status(404).json({ error: 'Project not found' });
+    }
+
+    if (project.userId !== decoded.userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    await prisma.$transaction([
+      prisma.rSVP.deleteMany({ where: { projectId } }),
+      prisma.guestGroup.deleteMany({ where: { projectId } }),
+      prisma.section.deleteMany({ where: { projectId } }),
+      prisma.eventInfo.deleteMany({ where: { projectId } }),
+      prisma.media.deleteMany({ where: { projectId } }),
+      prisma.gift.deleteMany({ where: { projectId } }),
+      prisma.analytics.deleteMany({ where: { projectId } }),
+      prisma.projectMember.deleteMany({ where: { projectId } }),
+      prisma.slugHistory.deleteMany({ where: { projectId } }),
+      prisma.weddingProject.delete({ where: { id: projectId } })
+    ]);
+
+    res.json({ success: true, message: 'Project deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || 'Failed to delete project' });
+  }
+});
+
 // Templates: Get All
 app.get('/api/templates', async (req, res) => {
   try {
