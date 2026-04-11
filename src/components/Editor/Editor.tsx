@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import PublicWedding from '../Wedding/PublicWedding';
 import { cn } from '../../lib/utils';
+import { ImageUpload } from '../ui/ImageUpload';
 
 // ─── Section catalogue: single source of truth ──────────────────────────────
 
@@ -192,13 +193,19 @@ function HeroConfig({ content, onChange }: any) {
     <div className="space-y-3">
       {fields.map(({ key, label, type }) => (
         <div key={key}>
-          <label className="text-xs font-semibold text-slate-500">{label}</label>
-          <input
-            type={type || 'text'}
-            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
-            value={content[key] ?? ''}
-            onChange={(e) => onChange({ [key]: e.target.value })}
-          />
+          {key === 'backgroundImage' ? (
+            <ImageUpload label={label} value={content[key] ?? ''} onChange={(url) => onChange({ [key]: url })} />
+          ) : (
+            <>
+              <label className="text-xs font-semibold text-slate-500">{label}</label>
+              <input
+                type={type || 'text'}
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
+                value={content[key] ?? ''}
+                onChange={(e) => onChange({ [key]: e.target.value })}
+              />
+            </>
+          )}
         </div>
       ))}
     </div>
@@ -240,12 +247,18 @@ function StoryConfig({ content, onChange }: any) {
           </div>
           {['date', 'title', 'description', 'image'].map((k) => (
             <div key={k}>
-              <label className="text-xs text-slate-400 capitalize">{k === 'image' ? 'Ảnh (URL)' : k}</label>
-              <input
-                className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-rose-500 focus:outline-none"
-                value={item[k] ?? ''}
-                onChange={(e) => updateItem(i, { [k]: e.target.value })}
-              />
+              {k === 'image' ? (
+                <ImageUpload label="Ảnh minh họa" value={item[k] ?? ''} onChange={(url) => updateItem(i, { [k]: url })} />
+              ) : (
+                <>
+                  <label className="text-xs text-slate-400 capitalize">{k}</label>
+                  <input
+                    className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-rose-500 focus:outline-none"
+                    value={item[k] ?? ''}
+                    onChange={(e) => updateItem(i, { [k]: e.target.value })}
+                  />
+                </>
+              )}
             </div>
           ))}
         </div>
@@ -281,12 +294,10 @@ function GalleryConfig({ content, onChange }: any) {
         <label className="text-xs font-semibold text-slate-500">Ảnh ({images.length})</label>
         {images.map((img, i) => (
           <div key={i} className="flex gap-2 items-center">
-            <input
-              className="flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs focus:border-rose-500 focus:outline-none"
-              value={img}
-              onChange={(e) => update(i, e.target.value)}
-            />
-            <button onClick={() => remove(i)} className="text-slate-300 hover:text-rose-500">
+            <div className="flex-1">
+              <ImageUpload label="" value={img} onChange={(val) => update(i, val)} />
+            </div>
+            <button onClick={() => remove(i)} className="text-slate-300 hover:text-rose-500 mt-1">
               <X size={14} />
             </button>
           </div>
@@ -423,15 +434,21 @@ function GiftConfig({ content, onChange }: any) {
               { k: 'bankName', label: 'Ngân hàng' },
               { k: 'accountNumber', label: 'Số tài khoản' },
               { k: 'accountName', label: 'Tên chủ TK (in hoa)' },
-              { k: 'qrCode', label: 'Ảnh QR (URL)' },
+              { k: 'qrCode', label: 'Ảnh QR' },
             ].map(({ k, label }) => (
               <div key={k}>
-                <label className="text-xs text-slate-400">{label}</label>
-                <input
-                  className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-rose-500 focus:outline-none"
-                  value={acc[k] ?? ''}
-                  onChange={(e) => updateAcc(i, { [k]: e.target.value })}
-                />
+                {k === 'qrCode' ? (
+                  <ImageUpload label={label} value={acc[k] ?? ''} onChange={(url) => updateAcc(i, { [k]: url })} />
+                ) : (
+                  <>
+                    <label className="text-xs text-slate-400">{label}</label>
+                    <input
+                      className="mt-0.5 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs focus:border-rose-500 focus:outline-none"
+                      value={acc[k] ?? ''}
+                      onChange={(e) => updateAcc(i, { [k]: e.target.value })}
+                    />
+                  </>
+                )}
               </div>
             ))}
           </div>

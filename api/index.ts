@@ -2,6 +2,16 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import multer from 'multer';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 const prisma =
@@ -20,6 +30,34 @@ app.use(express.json());
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // --- API ROUTES ---
+
+// Upload Image to Cloudinary
+app.post('/api/upload', upload.single('file'), async (req: any, res: any) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, JWT_SECRET);
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString('base64');
+    let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+
+    const result = await cloudinary.uploader.upload(dataURI, {
+      resource_type: 'auto',
+      folder: 'wedding_saas'
+    });
+
+    res.json({ url: result.secure_url });
+  } catch (error: any) {
+    console.error('Upload Error:', error);
+    res.status(500).json({ error: error.message || 'Failed to upload image' });
+  }
+});
 
 // Auth: Register
 app.post('/api/auth/register', async (req, res) => {
