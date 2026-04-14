@@ -118,36 +118,45 @@ app.post('/api/projects/create', async (req, res) => {
   try {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-    
-    // Find or create a default template to avoid foreign key constraint error
-    let template = await prisma.template.findFirst();
+    const { title, slug, templateId } = req.body;
+
+    // Fetch template to get default config/sections
+    const template = await prisma.template.findUnique({
+      where: { id: templateId }
+    });
+
     if (!template) {
-      template = await prisma.template.create({
-        data: {
-          id: 'default-template-id',
-          name: 'Default Template',
-          thumbnail: 'https://picsum.photos/seed/wedding/400/300',
-          config: {},
-        }
-      });
+      return res.status(404).json({ error: 'Template not found' });
     }
+
+    const templateConfig = template.config as any;
+    const defaultSections = templateConfig.defaultSections || [
+      { type: 'hero', content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27', subtitle: 'Chúng mình kết hôn rồi!' }, order: 0 }
+    ];
 
     const project = await prisma.weddingProject.create({
       data: {
         userId: decoded.userId,
-        title: req.body.title,
-        slug: req.body.slug,
+        title: title || 'Đám cưới của chúng mình',
+        slug: slug,
         templateId: template.id,
+        themeConfig: templateConfig.theme || {},
         sections: {
-          create: [
-            { type: 'hero', content: { groomName: 'Tên Chú Rể', brideName: 'Tên Cô Dâu', date: '2026-04-27' }, order: 0 }
-          ]
+          create: defaultSections.map((s: any, i: number) => ({
+            type: s.type,
+            content: s.content,
+            order: i
+          }))
         }
       },
-      include: { sections: true }
+      include: { 
+        sections: { orderBy: { order: 'asc' } },
+        template: true
+      }
     });
     res.json(project);
   } catch (error: any) {
+    console.error('Create error:', error);
     res.status(400).json({ error: error.message || 'Failed to create project' });
   }
 });
@@ -249,6 +258,72 @@ app.delete('/api/projects/:id', async (req, res) => {
     res.json({ success: true, message: 'Project deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message || 'Failed to delete project' });
+  }
+});
+
+// Templates: Seed (Development only)
+app.post('/api/templates/seed', async (req, res) => {
+  try {
+    const templates = [
+      {
+        id: 'minimalist-01',
+        name: 'Thanh Lịch (Minimalist)',
+        thumbnail: 'https://picsum.photos/seed/minimal/800/600',
+        config: {
+          theme: { primary: '#7D8E7D', secondary: '#FDFBF7', font: 'serif' },
+          defaultSections: [
+            { type: 'hero', content: { groomName: 'Quốc Anh', brideName: 'Thùy Chi', date: '2026-05-20', subtitle: 'Hành trình hạnh phúc bắt đầu' } },
+            { type: 'story', content: { title: 'Chuyện Tình Chúng Mình', items: [{ date: '2022', title: 'Lần đầu gặp gỡ', description: 'Gặp nhau tại một quán cà phê nhỏ giữa lòng Hà Nội.' }] } },
+            { type: 'gallery', content: { title: 'Album Kỷ Niệm', images: ['https://picsum.photos/seed/w1/800/800', 'https://picsum.photos/seed/w2/800/800'] } },
+            { type: 'rsvp', content: { title: 'Xác Nhận Tham Dự', subtitle: 'Sự hiện diện của bạn là niềm vinh hạnh cho gia đình chúng tôi.' } },
+            { type: 'gift', content: { title: 'Mừng Cưới', subtitle: 'Gửi lời chúc phúc và quà mừng đến đôi trẻ.', accounts: [{ bankName: 'Vietcombank', accountNumber: '123456789', accountName: 'NGUYEN QUOC ANH' }] } }
+          ]
+        }
+      },
+      {
+        id: 'romantic-02',
+        name: 'Lãng Mạn (Romantic Floral)',
+        thumbnail: 'https://picsum.photos/seed/floral/800/600',
+        config: {
+          theme: { primary: '#E29595', secondary: '#FFFFFF', font: 'cursive' },
+          defaultSections: [
+            { type: 'hero', content: { groomName: 'Minh Đức', brideName: 'Lan Hương', date: '2026-06-15', subtitle: 'Trọn đời bên nhau' } },
+            { type: 'event', content: { title: 'Lễ Thành Hôn', events: [{ title: 'Lễ Vu Quy', side: 'BRIDE', date: '2026-06-15T08:00:00', location: 'Tư gia nhà gái', address: 'Quận 1, TP. HCM' }, { title: 'Tiệc Cưới', side: 'GROOM', date: '2026-06-15T18:00:00', location: 'Trung tâm tiệc cưới Gem Center', address: 'Quận 1, TP. HCM' }] } },
+            { type: 'gallery', content: { title: 'Khoảnh Khắc Đẹp', images: ['https://picsum.photos/seed/w3/800/800', 'https://picsum.photos/seed/w4/800/800'] } },
+            { type: 'rsvp', content: { title: 'Bạn Sẽ Đến Chứ?', subtitle: 'Vui lòng xác nhận trước ngày 01/06/2026.' } },
+            { type: 'gift', content: { title: 'Hộp Quà Mừng', subtitle: 'Cảm ơn bạn đã chia sẻ niềm vui cùng chúng mình.', accounts: [{ bankName: 'Techcombank', accountNumber: '987654321', accountName: 'TRAN LAN HUONG' }] } }
+          ]
+        }
+      },
+      {
+        id: 'modern-03',
+        name: 'Hiện Đại (Modern Bold)',
+        thumbnail: 'https://picsum.photos/seed/modern/800/600',
+        config: {
+          theme: { primary: '#1B263B', secondary: '#E9C46A', font: 'sans' },
+          defaultSections: [
+            { type: 'hero', content: { groomName: 'Hoàng Long', brideName: 'Phương Anh', date: '2026-12-12', subtitle: 'Save Our Date' } },
+            { type: 'story', content: { title: 'Our Journey', items: [{ date: '2023', title: 'The Proposal', description: 'Một buổi tối lãng mạn tại Đà Lạt.' }] } },
+            { type: 'event', content: { title: 'Wedding Schedule', events: [{ title: 'Wedding Ceremony', side: 'GROOM', date: '2026-12-12T17:00:00', location: 'JW Marriott Hotel', address: 'Quận Nam Từ Liêm, Hà Nội' }] } },
+            { type: 'gallery', content: { title: 'The Gallery', images: ['https://picsum.photos/seed/w5/800/800', 'https://picsum.photos/seed/w6/800/800'] } },
+            { type: 'rsvp', content: { title: 'RSVP Now', subtitle: 'Let us know if you can make it!' } },
+            { type: 'gift', content: { title: 'Wedding Registry', subtitle: 'Your presence is the greatest gift.', accounts: [{ bankName: 'MB Bank', accountNumber: '111222333', accountName: 'LE HOANG LONG' }] } }
+          ]
+        }
+      }
+    ];
+
+    for (const t of templates) {
+      await prisma.template.upsert({
+        where: { id: t.id },
+        update: t,
+        create: t
+      });
+    }
+
+    res.json({ success: true, message: 'Templates seeded successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

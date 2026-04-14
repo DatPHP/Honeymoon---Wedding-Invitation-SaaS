@@ -16,6 +16,7 @@ import {
   CalendarDays,
   X,
   CheckCircle2,
+  Clock,
 } from 'lucide-react';
 import PublicWedding from '../Wedding/PublicWedding';
 import { cn } from '../../lib/utils';
@@ -66,6 +67,22 @@ export const SECTION_TYPES = [
     description: 'Tài khoản ngân hàng và mã QR nhận tiền mừng.',
     icon: GiftIcon,
     color: 'emerald',
+    singleton: true,
+  },
+  {
+    type: 'greeting',
+    label: 'Lời chào',
+    description: 'Lời chào mừng khách mời đến với đám cưới.',
+    icon: MessageSquare,
+    color: 'sky',
+  },
+  {
+    type: 'countdown',
+    label: 'Đếm ngược',
+    description: 'Đồng hồ đếm ngược đến ngày cưới.',
+    icon: Clock,
+    color: 'rose',
+    singleton: true,
   },
 ] as const;
 
@@ -148,6 +165,17 @@ function getDefaultContent(type: string) {
               'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=00020101021238570010A000000727012700069704220113114244938650208QRIBFTTA5303704540315000000000000006304E665',
           },
         ],
+      };
+    case 'countdown':
+      return {
+        title: 'Đếm ngược ngày hạnh phúc',
+        targetDate: '2026-12-31T18:00',
+      };
+    case 'greeting':
+      return {
+        title: 'Chào mừng bạn!',
+        content: 'Chúng mình rất vui mừng được đón tiếp bạn trong ngày trọng đại này.',
+        image: 'https://picsum.photos/seed/greeting/600/400',
       };
     default:
       return {};
@@ -464,10 +492,63 @@ function GiftConfig({ content, onChange }: any) {
   );
 }
 
+function CountdownConfig({ content, onChange }: any) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-xs font-semibold text-slate-500">Tiêu đề</label>
+        <input
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
+          value={content.title ?? ''}
+          onChange={(e) => onChange({ title: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-slate-500">Ngày & Giờ đếm ngược</label>
+        <input
+          type="datetime-local"
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
+          value={content.targetDate ?? ''}
+          onChange={(e) => onChange({ targetDate: e.target.value })}
+        />
+      </div>
+    </div>
+  );
+}
+
+function GreetingConfig({ content, onChange }: any) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-xs font-semibold text-slate-500">Tiêu đề</label>
+        <input
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
+          value={content.title ?? ''}
+          onChange={(e) => onChange({ title: e.target.value })}
+        />
+      </div>
+      <div>
+        <label className="text-xs font-semibold text-slate-500">Nội dung</label>
+        <textarea
+          className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none"
+          rows={4}
+          value={content.content ?? ''}
+          onChange={(e) => onChange({ content: e.target.value })}
+        />
+      </div>
+      <div>
+        <ImageUpload label="Ảnh minh họa" value={content.image ?? ''} onChange={(url) => onChange({ image: url })} />
+      </div>
+    </div>
+  );
+}
+
 function SectionConfigPanel({ section, onChange }: { section: any; onChange: (patch: any) => void }) {
   switch (section.type) {
-    case 'hero':    return <HeroConfig    content={section.content} onChange={onChange} />;
-    case 'story':   return <StoryConfig   content={section.content} onChange={onChange} />;
+    case 'hero':      return <HeroConfig      content={section.content} onChange={onChange} />;
+    case 'countdown': return <CountdownConfig content={section.content} onChange={onChange} />;
+    case 'greeting':  return <GreetingConfig   content={section.content} onChange={onChange} />;
+    case 'story':     return <StoryConfig   content={section.content} onChange={onChange} />;
     case 'gallery': return <GalleryConfig content={section.content} onChange={onChange} />;
     case 'event':   return <EventConfig   content={section.content} onChange={onChange} />;
     case 'rsvp':    return <RSVPConfig    content={section.content} onChange={onChange} />;
