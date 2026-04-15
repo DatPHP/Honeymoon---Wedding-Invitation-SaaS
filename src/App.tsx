@@ -353,8 +353,8 @@ function TemplateGallery({ setView, onSelect }: any) {
         const data = await res.json();
         if (Array.isArray(data)) {
           setTemplates(data as any);
-          // If no templates, seed them (for dev convenience)
-          if (data.length === 0) {
+          // If templates are missing, seed them
+          if (data.length < 3) {
             await fetch('/api/templates/seed', { method: 'POST' });
             const reRes = await fetch('/api/templates');
             const reData = await reRes.json();

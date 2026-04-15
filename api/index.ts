@@ -321,6 +321,15 @@ app.post('/api/templates/seed', async (req, res) => {
       });
     }
 
+    // Clean up old default template if it exists
+    try {
+      await prisma.template.delete({
+        where: { id: 'default-template-id' }
+      });
+    } catch (e) {
+      // Ignore if not found
+    }
+
     res.json({ success: true, message: 'Templates seeded successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
