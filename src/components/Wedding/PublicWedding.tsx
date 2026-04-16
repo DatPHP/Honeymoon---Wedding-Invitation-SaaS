@@ -33,7 +33,7 @@ function SectionRenderer({ section, theme }: any) {
     case 'story':     return <StorySection     content={content} theme={theme} />;
     case 'gallery':   return <GallerySection   content={content} theme={theme} />;
     case 'event':     return <EventSection     content={content} theme={theme} />;
-    case 'rsvp':      return <RSVPSection      content={content} theme={theme} />;
+    case 'rsvp':      return <RSVPSection      content={content} theme={theme} projectId={section.projectId} />;
     case 'gift':      return <GiftSection      content={content} theme={theme} />;
     default:          return null;
   }
@@ -368,7 +368,53 @@ function EventSection({ content, theme }: any) {
 
 // ─── RSVP ─────────────────────────────────────────────────────────────────────
 
-function RSVPSection({ content, theme }: any) {
+function RSVPSection({ content, theme, projectId }: any) {
+  const [formData, setFormData] = useState({
+    name: '',
+    attending: 'true',
+    relationship: 'Bàn bè',
+    message: '',
+    guestCount: '1'
+  });
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setStatus('submitting');
+    try {
+      const res = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          projectId,
+          attending: formData.attending === 'true'
+        })
+      });
+      if (res.ok) {
+        setStatus('success');
+      } else {
+        setStatus('error');
+      }
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <section className="py-24 text-white" style={{ backgroundColor: theme.primary }}>
+        <div className="container mx-auto max-w-2xl px-6 text-center">
+          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}>
+            <Heart className="mx-auto mb-6 h-16 w-16 fill-white" />
+            <h2 className="text-4xl font-bold">Cảm ơn bạn!</h2>
+            <p className="mt-4 text-xl opacity-90">Phản hồi của bạn đã được gửi đến cô dâu & chú rể.</p>
+          </motion.div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-24 text-white" style={{ backgroundColor: theme.primary }}>
       <div className="container mx-auto max-w-2xl px-6 text-center">
@@ -380,33 +426,59 @@ function RSVPSection({ content, theme }: any) {
           {content.subtitle || 'Sự hiện diện của bạn là niềm vinh hạnh cho gia đình chúng tôi.'}
         </p>
 
-        <form className="mt-10 space-y-4 text-left" onSubmit={(e) => e.preventDefault()}>
-          <input
-            type="text"
-            placeholder="Họ và tên"
-            className="w-full rounded-xl border-none bg-white/10 px-6 py-4 text-white placeholder:text-rose-200 focus:ring-2 focus:ring-white focus:outline-none"
-          />
-          <div className="grid grid-cols-2 gap-4">
-            <select className="rounded-xl border-none bg-white/10 px-4 py-4 text-white focus:ring-2 focus:ring-white focus:outline-none">
-              <option className="text-slate-900">Đi một mình</option>
-              <option className="text-slate-900">Đi cùng người thân</option>
-            </select>
-            <select className="rounded-xl border-none bg-white/10 px-4 py-4 text-white focus:ring-2 focus:ring-white focus:outline-none">
-              <option className="text-slate-900">Sẽ tham dự</option>
-              <option className="text-slate-900">Rất tiếc, không thể</option>
-            </select>
+        <form className="mt-10 space-y-4 text-left" onSubmit={handleSubmit}>
+          <div>
+            <label className="text-sm font-medium opacity-80 mb-1 block">Tên của bạn</label>
+            <input
+              type="text"
+              required
+              placeholder="Nhập họ và tên..."
+              className="w-full rounded-xl border-none bg-white/10 px-6 py-4 text-white placeholder:text-rose-100 focus:ring-2 focus:ring-white focus:outline-none"
+              value={formData.name}
+              onChange={e => setFormData({ ...formData, name: e.target.value })}
+            />
           </div>
-          <textarea
-            placeholder="Lời chúc gửi đến cô dâu & chú rể"
-            rows={4}
-            className="w-full rounded-xl border-none bg-white/10 px-6 py-4 text-white placeholder:text-rose-200 focus:ring-2 focus:ring-white focus:outline-none"
-          />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium opacity-80 mb-1 block">Số lượng khách</label>
+              <select 
+                className="w-full rounded-xl border-none bg-white/10 px-4 py-4 text-white focus:ring-2 focus:ring-white focus:outline-none"
+                value={formData.guestCount}
+                onChange={e => setFormData({ ...formData, guestCount: e.target.value })}
+              >
+                {[1, 2, 3, 4, 5].map(n => <option key={n} value={n} className="text-slate-900">{n} người</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium opacity-80 mb-1 block">Xác nhận</label>
+              <select 
+                className="w-full rounded-xl border-none bg-white/10 px-4 py-4 text-white focus:ring-2 focus:ring-white focus:outline-none"
+                value={formData.attending}
+                onChange={e => setFormData({ ...formData, attending: e.target.value })}
+              >
+                <option value="true" className="text-slate-900">Sẽ tham dự</option>
+                <option value="false" className="text-slate-900">Rất tiếc, không thể</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium opacity-80 mb-1 block">Lời nhắn</label>
+            <textarea
+              placeholder="Lời chúc gửi đến cô dâu & chú rể..."
+              rows={4}
+              className="w-full rounded-xl border-none bg-white/10 px-6 py-4 text-white placeholder:text-rose-100 focus:ring-2 focus:ring-white focus:outline-none"
+              value={formData.message}
+              onChange={e => setFormData({ ...formData, message: e.target.value })}
+            />
+          </div>
           <button
             type="submit"
-            className="w-full rounded-xl bg-white py-4 font-bold text-rose-600 shadow-xl transition-transform hover:scale-[1.02] active:scale-[0.98]"
+            disabled={status === 'submitting'}
+            className="w-full rounded-xl bg-white py-4 font-bold text-rose-600 shadow-xl transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
           >
-            Gửi lời chúc
+            {status === 'submitting' ? 'Đang gửi...' : 'Gửi lời chúc'}
           </button>
+          {status === 'error' && <p className="text-center text-sm font-bold text-rose-200">Đã có lỗi xảy ra. Vui lòng thử lại.</p>}
         </form>
       </div>
     </section>

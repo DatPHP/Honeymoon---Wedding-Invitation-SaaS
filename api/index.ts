@@ -211,12 +211,49 @@ app.get('/api/wedding/:slug', async (req, res) => {
 // RSVP: Submit
 app.post('/api/rsvp', async (req, res) => {
   try {
+    const { projectId, name, attending, relationship, message, guestCount, giftType } = req.body;
     const rsvp = await prisma.rSVP.create({
-      data: req.body,
+      data: {
+        projectId,
+        name,
+        attending: Boolean(attending),
+        relationship: relationship || 'Bàn bè',
+        message: message || '',
+        guestCount: parseInt(guestCount) || 1,
+        giftType: giftType === 'ONLINE' ? 'ONLINE' : 'OFFLINE',
+      },
     });
     res.json(rsvp);
+  } catch (error: any) {
+    res.status(400).json({ error: 'Failed to submit RSVP: ' + error.message });
+  }
+});
+
+// RSVP: Get for Project (Owner only)
+app.get('/api/projects/:id/rsvps', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const projectId = req.params.id;
+
+    const project = await prisma.weddingProject.findUnique({
+      where: { id: projectId }
+    });
+
+    if (!project || project.userId !== decoded.userId) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
+    const rsvps = await prisma.rSVP.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(rsvps);
   } catch (error) {
-    res.status(400).json({ error: 'Failed to submit RSVP' });
+    res.status(500).json({ error: 'Failed to fetch RSVPs' });
   }
 });
 
