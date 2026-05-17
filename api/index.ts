@@ -167,13 +167,21 @@ app.post('/api/projects/:id/update', async (req, res) => {
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
   
   try {
-    const { sections, title } = req.body;
+    const { sections, title, themeConfig } = req.body;
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+
+    // Verify ownership
+    const existing = await prisma.weddingProject.findUnique({ where: { id: req.params.id } });
+    if (!existing || existing.userId !== decoded.userId) return res.status(403).json({ error: 'Forbidden' });
+
     await prisma.section.deleteMany({ where: { projectId: req.params.id } });
     
     const project = await prisma.weddingProject.update({
       where: { id: req.params.id },
       data: {
         title,
+        themeConfig,
         sections: {
           create: sections.map((s: any, i: number) => ({
             type: s.type,
@@ -187,6 +195,47 @@ app.post('/api/projects/:id/update', async (req, res) => {
     res.json(project);
   } catch (error) {
     res.status(400).json({ error: 'Update failed' });
+  }
+});
+
+// Projects: Publish
+app.post('/api/projects/:id/publish', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
+  
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    const { slug } = req.body;
+
+    const project = await prisma.weddingProject.findUnique({ where: { id: req.params.id } });
+    if (!project || project.userId !== decoded.userId) return res.status(403).json({ error: 'Forbidden' });
+
+    // Ensure unique slug
+    let finalSlug = slug || project.slug;
+    const slugExists = await prisma.weddingProject.findFirst({
+      where: { 
+        slug: finalSlug,
+        NOT: { id: project.id }
+      }
+    });
+
+    if (slugExists) {
+      return res.status(400).json({ error: 'Đường dẫn này đã tồn tại, vui lòng chọn tên khác.' });
+    }
+
+    const updated = await prisma.weddingProject.update({
+      where: { id: req.params.id },
+      data: {
+        isPublished: true,
+        publishedAt: new Date(),
+        slug: finalSlug
+      }
+    });
+
+    res.json({ success: true, project: updated });
+  } catch (error) {
+    res.status(500).json({ error: 'Publish failed' });
   }
 });
 

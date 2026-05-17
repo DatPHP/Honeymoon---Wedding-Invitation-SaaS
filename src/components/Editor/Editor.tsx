@@ -17,6 +17,10 @@ import {
   X,
   CheckCircle2,
   Clock,
+  ExternalLink,
+  Settings,
+  Globe,
+  Palette,
 } from 'lucide-react';
 import PublicWedding from '../Wedding/PublicWedding';
 import { cn } from '../../lib/utils';
@@ -666,6 +670,7 @@ export default function Editor({ project: initialProject, setView }: any) {
   const [isPreview, setIsPreview] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [activeTab, setActiveTab] = useState<'sections' | 'theme'>('sections');
 
   const activeSection = project.sections.find((s: any) => s.id === activeSectionId);
   const existingTypes: string[] = project.sections.map((s: any) => s.type);
@@ -720,7 +725,11 @@ export default function Editor({ project: initialProject, setView }: any) {
       const res = await fetch(`/api/projects/${project.id}/update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ title: project.title, sections: project.sections }),
+        body: JSON.stringify({ 
+          title: project.title, 
+          sections: project.sections,
+          themeConfig: project.themeConfig 
+        }),
       });
       const data = await res.json();
       if (data.id) {
@@ -733,6 +742,32 @@ export default function Editor({ project: initialProject, setView }: any) {
     } catch {
       setSaveState('error');
       setTimeout(() => setSaveState('idle'), 2500);
+    }
+  };
+
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+
+  const handlePublish = async () => {
+    setIsPublishing(true);
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`/api/projects/${project.id}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ slug: project.slug }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProject(prev => ({ ...prev, isPublished: true }));
+        setShowPublishModal(true);
+      } else {
+        alert(data.error || 'Xuất bản thất bại');
+      }
+    } catch {
+      alert('Đã có lỗi xảy ra');
+    } finally {
+      setIsPublishing(false);
     }
   };
 
@@ -773,6 +808,14 @@ export default function Editor({ project: initialProject, setView }: any) {
               <span>{isPreview ? 'Chỉnh sửa' : 'Xem trước'}</span>
             </button>
             <button
+              onClick={handlePublish}
+              disabled={isPublishing}
+              className="flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-lg hover:bg-slate-800 disabled:opacity-50"
+            >
+              <Globe size={15} />
+              <span>{isPublishing ? 'Đang gửi...' : 'Xuất bản'}</span>
+            </button>
+            <button
               onClick={handleSave}
               disabled={saveState === 'saving'}
               className={cn(
@@ -796,80 +839,144 @@ export default function Editor({ project: initialProject, setView }: any) {
           {/* ── Sidebar ── */}
           {!isPreview && (
             <aside className="flex w-80 shrink-0 flex-col border-r bg-white overflow-hidden">
-              {/* Section list */}
-              <div className="flex-shrink-0 border-b p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Cấu trúc thiệp</h3>
-                <div className="mt-3 space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {project.sections.map((section: any, idx: number) => (
-                    <div
-                      key={section.id}
-                      onClick={() => setActiveSectionId(section.id)}
-                      className={cn(
-                        'group flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-all',
-                        activeSectionId === section.id
-                          ? 'border-rose-400 bg-rose-50 text-rose-600 shadow-sm'
-                          : 'border-slate-100 text-slate-700 hover:border-slate-200 hover:bg-slate-50'
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <SectionIcon type={section.type} />
-                        <span className="truncate text-sm font-semibold">
-                          {SECTION_LABELS[section.type] ?? section.type}
-                        </span>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'up'); }}
-                          disabled={idx === 0}
-                          className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20"
-                        >
-                          <MoveUp size={12} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'down'); }}
-                          disabled={idx === project.sections.length - 1}
-                          className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20"
-                        >
-                          <MoveDown size={12} />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); deleteSection(section.id); }}
-                          className="rounded p-1 text-slate-400 hover:text-rose-600"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {/* Tabs */}
+              <div className="flex border-b border-slate-100">
                 <button
-                  onClick={() => setShowPicker(true)}
-                  className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-400 transition-colors hover:border-rose-300 hover:text-rose-500"
+                  onClick={() => setActiveTab('sections')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-4 text-[10px] font-bold uppercase tracking-widest transition-all",
+                    activeTab === 'sections' ? "text-rose-600 border-b-2 border-rose-600 bg-rose-50/30" : "text-slate-400 hover:text-slate-600"
+                  )}
                 >
-                  <Plus size={14} />
-                  Thêm section
+                  <Settings size={14} />
+                  Cấu trúc
+                </button>
+                <button
+                  onClick={() => setActiveTab('theme')}
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 py-4 text-[10px] font-bold uppercase tracking-widest transition-all",
+                    activeTab === 'theme' ? "text-rose-600 border-b-2 border-rose-600 bg-rose-50/30" : "text-slate-400 hover:text-slate-600"
+                  )}
+                >
+                  <Palette size={14} />
+                  Giao diện
                 </button>
               </div>
 
-              {/* Config panel for active section */}
-              <div className="flex-1 overflow-y-auto p-4">
-                {activeSection ? (
-                  <>
-                    <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
-                      <SectionIcon type={activeSection.type} />
-                      {SECTION_LABELS[activeSection.type] ?? activeSection.type}
-                    </h3>
-                    <SectionConfigPanel
-                      section={activeSection}
-                      onChange={(patch) => updateSectionContent(activeSection.id, patch)}
-                    />
-                  </>
-                ) : (
-                  <p className="text-xs text-slate-400 italic text-center pt-8">
-                    Chọn một section để chỉnh sửa nội dung
-                  </p>
-                )}
-              </div>
+              {activeTab === 'sections' ? (
+                <>
+                  {/* Section list */}
+                  <div className="flex-shrink-0 border-b p-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-slate-400">Danh sách các phần</h3>
+                    <div className="mt-3 space-y-1.5 max-h-[35vh] overflow-y-auto pr-1 custom-scrollbar">
+                      {project.sections.map((section: any, idx: number) => (
+                        <div
+                          key={section.id}
+                          onClick={() => setActiveSectionId(section.id)}
+                          className={cn(
+                            'group flex cursor-pointer items-center justify-between rounded-xl border px-3 py-2.5 transition-all',
+                            activeSectionId === section.id
+                              ? 'border-rose-400 bg-rose-50 text-rose-600 shadow-sm'
+                              : 'border-slate-100 text-slate-700 hover:border-slate-200 hover:bg-slate-50'
+                          )}
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <SectionIcon type={section.type} />
+                            <span className="truncate text-sm font-semibold">
+                              {SECTION_LABELS[section.type] ?? section.type}
+                            </span>
+                          </div>
+                          <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'up'); }}
+                              disabled={idx === 0}
+                              className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20"
+                            >
+                              <MoveUp size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); moveSection(section.id, 'down'); }}
+                              disabled={idx === project.sections.length - 1}
+                              className="rounded p-1 text-slate-400 hover:text-slate-700 disabled:opacity-20"
+                            >
+                              <MoveDown size={12} />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); deleteSection(section.id); }}
+                              className="rounded p-1 text-slate-400 hover:text-rose-600"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setShowPicker(true)}
+                      className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-200 py-2.5 text-sm font-semibold text-slate-400 transition-colors hover:border-rose-300 hover:text-rose-500"
+                    >
+                      <Plus size={14} />
+                      Thêm phần mới
+                    </button>
+                  </div>
+
+                  {/* Config panel for active section */}
+                  <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                    {activeSection ? (
+                      <>
+                        <h3 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400">
+                          <SectionIcon type={activeSection.type} />
+                          {SECTION_LABELS[activeSection.type] ?? activeSection.type}
+                        </h3>
+                        <SectionConfigPanel
+                          section={activeSection}
+                          onChange={(patch) => updateSectionContent(activeSection.id, patch)}
+                        />
+                      </>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic text-center pt-8">
+                        Chọn một phần để chỉnh sửa nội dung
+                      </p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                   <ThemeConfig 
+                    theme={project.themeConfig || { primary: '#E29595', font: 'serif' }} 
+                    onChange={(patch: any) => setProject((prev: any) => ({ ...prev, themeConfig: { ...prev.themeConfig, ...patch } }))} 
+                  />
+                  <div className="mt-8 pt-8 border-t border-slate-100">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Đường dẫn thiệp cưới</label>
+                    <p className="text-[10px] text-slate-400 mb-3 mt-1">Đường dẫn duy nhất cho website của bạn.</p>
+                    <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-2 text-xs focus-within:border-rose-300 transition-colors">
+                      <span className="text-slate-400 font-medium">/wedding/</span>
+                      <input 
+                        className="flex-1 bg-transparent font-bold text-slate-700 placeholder:text-slate-300 focus:outline-none"
+                        value={project.slug}
+                        placeholder="ten-ban-va-nguoi-ay"
+                        onChange={(e) => setProject((prev: any) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-') }))}
+                      />
+                    </div>
+                    {project.isPublished && (
+                      <div className="mt-4 p-3 rounded-xl bg-emerald-50 border border-emerald-100">
+                         <div className="flex items-center gap-2 text-emerald-600 font-bold text-xs mb-1">
+                           <Globe size={12} />
+                           Công khai
+                         </div>
+                         <a 
+                          href={window.location.origin + '/wedding/' + project.slug}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[10px] text-emerald-500 hover:underline break-all"
+                         >
+                           {window.location.host + '/wedding/' + project.slug}
+                         </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </aside>
           )}
 
@@ -891,6 +998,139 @@ export default function Editor({ project: initialProject, setView }: any) {
           </main>
         </div>
       </div>
+
+      {showPublishModal && (
+        <PublishModal 
+          project={project} 
+          onClose={() => setShowPublishModal(false)} 
+        />
+      )}
     </>
+  );
+}
+
+function ThemeConfig({ theme, onChange }: any) {
+  const fonts = [
+    { id: 'serif', label: 'Playfair (Cổ điển)', class: 'font-serif' },
+    { id: 'cursive', label: 'Great Vibes (Lãng mạn)', class: 'font-cursive text-xl' },
+    { id: 'sans', label: 'Inter (Hiện đại)', class: 'font-sans' },
+  ];
+
+  const colors = [
+    '#E29595', '#D4A373', '#CCD5AE', '#A2D2FF', '#BDB2FF', '#000000', '#723831', '#FF9F1C'
+  ];
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-4">Font chữ chủ đạo</label>
+        <div className="grid grid-cols-1 gap-2">
+          {fonts.map(f => (
+            <button
+              key={f.id}
+              onClick={() => onChange({ font: f.id })}
+              className={cn(
+                "w-full flex items-center justify-between rounded-2xl border p-4 transition-all text-left group",
+                theme.font === f.id ? "border-rose-400 bg-rose-50 text-rose-600 shadow-sm" : "border-slate-100 hover:border-slate-200 bg-white"
+              )}
+            >
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase mb-1">{f.id} font</span>
+                <span className={cn(f.class, "text-sm")}>{f.label}</span>
+              </div>
+              {theme.font === f.id && <CheckCircle2 size={16} className="text-rose-500" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-4">Tông màu trang trí</label>
+        <div className="flex flex-wrap gap-3">
+          {colors.map(c => (
+            <button
+              key={c}
+              onClick={() => onChange({ primary: c })}
+              className={cn(
+                "h-10 w-10 rounded-full border-4 transition-all hover:scale-110 shadow-sm",
+                theme.primary === c ? "border-white ring-2 ring-rose-400 scale-110" : "border-transparent"
+              )}
+              style={{ backgroundColor: c }}
+            />
+          ))}
+          <div className="relative h-10 w-10 overflow-hidden rounded-full border-2 border-slate-100 bg-slate-50 transition-all hover:border-slate-300">
+            <input 
+              type="color" 
+              value={theme.primary} 
+              onChange={(e) => onChange({ primary: e.target.value })}
+              className="absolute -inset-2 h-[150%] w-[150%] cursor-pointer "
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PublishModal({ project, onClose }: { project: any; onClose: () => void }) {
+  const url = `${window.location.protocol}//${window.location.host}/wedding/${project.slug}`;
+
+  const copy = () => {
+    navigator.clipboard.writeText(url);
+    alert('Đã sao chép đường dẫn!');
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="w-full max-w-md rounded-[3rem] bg-white p-10 shadow-2xl text-center relative overflow-hidden"
+      >
+        <FloralOrnament />
+        
+        <div className="mx-auto mb-8 flex h-24 w-24 items-center justify-center rounded-full bg-emerald-50 relative z-10 shadow-inner">
+          <Globe className="h-10 w-10 text-emerald-500" />
+        </div>
+        
+        <div className="relative z-10">
+          <h2 className="font-serif text-4xl font-bold text-slate-900 leading-tight">Xuất bản thành công!</h2>
+          <p className="mt-3 text-slate-500 font-medium">Website đám cưới của bạn đã chính thức hoạt động trên toàn cầu.</p>
+
+          <div className="mt-10 rounded-[2rem] bg-slate-50 border border-slate-100 p-8 shadow-inner">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4 font-sans leading-none">Liên kết chia sẻ</p>
+            <div className="flex flex-col gap-3">
+              <div className="truncate rounded-2xl bg-white p-4 text-sm font-bold text-slate-600 border border-slate-100 shadow-sm leading-tight break-all">
+                {url}
+              </div>
+              <button 
+                onClick={copy}
+                className="rounded-2xl bg-slate-900 px-6 py-3 text-xs font-bold text-white hover:bg-slate-800 transition-all active:scale-95"
+              >
+                Sao chép liên kết
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-10 flex flex-col gap-4">
+            <a 
+              href={url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-3 rounded-2xl bg-linear-to-r from-rose-500 to-amber-500 py-5 text-sm font-bold text-white shadow-xl hover:shadow-rose-200 transition-all active:scale-95 uppercase tracking-widest"
+            >
+              <ExternalLink size={18} />
+              Trải nghiệm ngay
+            </a>
+            <button 
+              onClick={onClose}
+              className="py-2 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              Quay lại chỉnh sửa
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }

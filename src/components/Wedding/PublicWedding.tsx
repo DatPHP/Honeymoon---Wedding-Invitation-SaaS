@@ -1,7 +1,28 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'motion/react';
-import { Heart, MessageSquare, Gift, CalendarDays, MapPin, Clock } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Heart, MessageSquare, Gift, CalendarDays, MapPin, Clock, Music, Volume2, VolumeX } from 'lucide-react';
 import { cn, formatDate } from '../../lib/utils';
+
+// ─── Shared Components ───────────────────────────────────────────────────────
+
+function Ornament() {
+  return (
+    <div className="flex items-center justify-center gap-4 my-8">
+      <div className="h-px w-16 bg-linear-to-r from-transparent via-rose-300 to-transparent" />
+      <Heart className="h-4 w-4 text-rose-300 fill-rose-100" />
+      <div className="h-px w-16 bg-linear-to-r from-rose-300 via-rose-300 to-transparent" />
+    </div>
+  );
+}
+
+function FloralOrnament() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-10">
+      <div className="absolute -top-10 -left-10 h-64 w-64 rounded-full border-[20px] border-rose-200" />
+      <div className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full border-[20px] border-amber-200" />
+    </div>
+  );
+}
 
 export default function PublicWedding({ project }: any) {
   if (!project) return null;
@@ -12,12 +33,18 @@ export default function PublicWedding({ project }: any) {
 
   return (
     <div 
-      className={cn("min-h-screen bg-white selection:bg-rose-100 selection:text-rose-600", fontClass)}
+      className={cn("min-h-screen bg-white selection:bg-rose-100 selection:text-rose-600 overflow-x-hidden", fontClass)}
       style={{ '--primary': theme.primary } as any}
     >
       {sections.map((section: any) => (
         <SectionRenderer key={section.id} section={section} theme={theme} />
       ))}
+      
+      {/* Universal Footer */}
+      <footer className="py-12 text-center bg-slate-50 border-t border-slate-100">
+        <p className="font-cursive text-3xl text-rose-300 mb-2">Thank You</p>
+        <p className="text-sm text-slate-400 font-sans tracking-widest uppercase">For being part of our journey</p>
+      </footer>
     </div>
   );
 }
@@ -94,43 +121,87 @@ function CountdownSection({ content, theme }: any) {
 
 function HeroSection({ content, theme }: any) {
   return (
-    <section className="relative flex min-h-screen items-center justify-center overflow-hidden" style={{ backgroundColor: `${theme.primary}10` }}>
-      {/* Background image */}
-      <div className="absolute inset-0 opacity-20">
-        <img
-          src={content.backgroundImage || 'https://picsum.photos/seed/wedding/1920/1080'}
-          className="h-full w-full object-cover"
-          referrerPolicy="no-referrer"
-          alt=""
-        />
+    <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white">
+      <FloralOrnament />
+      
+      {/* Decorative Ornaments */}
+      <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">
+        <svg viewBox="0 0 100 100" className="absolute top-0 left-0 w-64 h-64 -translate-x-1/2 -translate-y-1/2 rotate-45">
+          <path d="M50 0 C70 0 100 30 100 50 C100 70 70 100 50 100 C30 100 0 70 0 50 C0 30 30 0 50 0" fill="currentColor" className="text-rose-400" />
+        </svg>
+        <svg viewBox="0 0 100 100" className="absolute bottom-0 right-0 w-64 h-64 translate-x-1/2 translate-y-1/2 rotate-12">
+          <path d="M50 0 C70 0 100 30 100 50 C100 70 70 100 50 100 C30 100 0 70 0 50 C0 30 30 0 50 0" fill="currentColor" className="text-amber-400" />
+        </svg>
+      </div>
+
+      {/* Background Image Container */}
+      <div className="absolute inset-0 z-0">
+        <motion.div 
+          initial={{ scale: 1.1 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 5, ease: "easeOut" }}
+          className="h-full w-full"
+        >
+          <img
+            src={content.backgroundImage || 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&q=80'}
+            className="h-full w-full object-cover"
+            referrerPolicy="no-referrer"
+            alt=""
+          />
+          <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px]" />
+        </motion.div>
       </div>
 
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: 'easeOut' }}
-        className="relative z-10 px-4 text-center"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+        className="relative z-10 max-w-4xl px-4 text-center"
       >
         <motion.div
-          animate={{ scale: [1, 1.1, 1] }}
-          transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.5, type: 'spring' }}
+          className="mb-6 flex items-center justify-center gap-4"
         >
-          <Heart className="mx-auto mb-8 h-14 w-14" style={{ fill: theme.primary, color: theme.primary }} />
+          <div className="h-px w-12 bg-rose-300" />
+          <Heart className="h-6 w-6 text-rose-400 fill-rose-400" />
+          <div className="h-px w-12 bg-rose-300" />
         </motion.div>
 
-        <h1 className="text-6xl font-bold tracking-tight text-slate-900 md:text-8xl">
-          {content.groomName || 'Chú Rể'}&nbsp;&amp;&nbsp;{content.brideName || 'Cô Dâu'}
-        </h1>
-
-        <p className="mt-6 text-2xl font-medium italic text-slate-600">
-          {content.subtitle || 'Chúng mình kết hôn rồi!'}
+        <p className="mb-4 font-cursive text-4xl text-rose-400 md:text-5xl">
+          Save the Date
         </p>
 
-        <div 
-          className="mt-10 inline-block rounded-full bg-white/80 px-8 py-3 text-xl font-bold shadow-sm backdrop-blur-sm"
-          style={{ color: theme.primary }}
+        <h1 className="font-serif text-6xl font-bold tracking-tight text-slate-900 md:text-9xl leading-none">
+          <span className="block mb-2">{content.groomName || 'Chú Rể'}</span>
+          <span className="font-cursive text-5xl md:text-7xl block my-4 text-rose-300 leading-none">&</span>
+          <span className="block">{content.brideName || 'Cô Dâu'}</span>
+        </h1>
+
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1, duration: 1 }}
+          className="mt-8 font-sans text-lg font-medium tracking-[0.3em] uppercase text-slate-500"
         >
-          {content.date ? formatDate(content.date) : 'Sắp diễn ra'}
+          {content.subtitle || 'Chúng mình kết hôn rồi!'}
+        </motion.p>
+
+        <div 
+          className="mt-12 inline-flex items-center gap-8 border-y border-rose-200 py-4 px-12"
+        >
+          <span className="font-serif text-2xl font-bold text-slate-700">
+            {content.date ? new Date(content.date).getDate() : '??'}
+          </span>
+          <span className="h-8 w-px bg-rose-200" />
+          <span className="font-serif text-2xl font-bold text-slate-700 uppercase tracking-widest">
+            {content.date ? new Date(content.date).toLocaleString('vi-VN', { month: 'long' }) : 'Tháng'}
+          </span>
+          <span className="h-8 w-px bg-rose-200" />
+          <span className="font-serif text-2xl font-bold text-slate-700">
+            {content.date ? new Date(content.date).getFullYear() : '202X'}
+          </span>
         </div>
       </motion.div>
     </section>
@@ -168,50 +239,69 @@ function StorySection({ content, theme }: any) {
   const items: any[] = content.items ?? [];
 
   return (
-    <section className="bg-white py-24">
-      <div className="container mx-auto max-w-4xl px-6">
+    <section className="bg-white py-24 relative overflow-hidden">
+      <FloralOrnament />
+      <div className="container mx-auto max-w-4xl px-6 relative z-10">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          className="text-center"
+          className="text-center mb-20"
         >
-          <Heart className="mx-auto mb-4 h-8 w-8" style={{ fill: theme.primary, color: theme.primary }} />
-          <h2 className="text-4xl font-bold text-slate-900">{content.title || 'Câu chuyện tình yêu'}</h2>
+          <p className="font-cursive text-3xl text-rose-300 mb-2">Our Story</p>
+          <h2 className="font-serif text-5xl font-bold text-slate-900 tracking-tight">Hành trình yêu thương</h2>
+          <Ornament />
         </motion.div>
 
         {items.length === 0 && (
           <p className="mt-12 text-center text-slate-400 italic">Chưa có cột mốc nào.</p>
         )}
 
-        <div className="mt-16 space-y-16">
-          {items.map((item: any, i: number) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.1 }}
-              className={cn(
-                'flex flex-col items-center gap-10 md:flex-row',
-                i % 2 !== 0 && 'md:flex-row-reverse'
-              )}
-            >
-              <div className="h-64 w-64 shrink-0 overflow-hidden rounded-full border-8 shadow-xl" style={{ borderColor: `${theme.primary}20` }}>
-                <img
-                  src={item.image || 'https://picsum.photos/seed/placeholder/400/400'}
-                  className="h-full w-full object-cover"
-                  referrerPolicy="no-referrer"
-                  alt={item.title}
-                />
-              </div>
-              <div className="flex-1 text-left">
-                <span className="text-base font-bold" style={{ color: theme.primary }}>{item.date}</span>
-                <h3 className="mt-2 text-2xl font-bold text-slate-900">{item.title}</h3>
-                <p className="mt-4 text-lg leading-relaxed text-slate-600">{item.description}</p>
-              </div>
-            </motion.div>
-          ))}
+        <div className="relative mt-24">
+          {/* Center Line */}
+          <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-linear-to-b from-rose-100 via-rose-300 to-rose-100 hidden md:block" />
+
+          <div className="space-y-24">
+            {items.map((item: any, i: number) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.8 }}
+                className={cn(
+                  'relative flex flex-col items-center md:flex-row',
+                  i % 2 !== 0 && 'md:flex-row-reverse'
+                )}
+              >
+                {/* Timeline Dot */}
+                <div className="absolute left-1/2 top-0 z-10 h-4 w-4 -translate-x-1/2 rounded-full border-4 border-white bg-rose-400 shadow-[0_0_0_4px_rgba(251,113,133,0.1)] hidden md:block" />
+
+                <div className="w-full md:w-1/2 px-8">
+                  <div className={cn(
+                    "relative overflow-hidden rounded-3xl shadow-2xl transition-transform hover:scale-[1.02]",
+                    i % 2 === 0 ? "md:mr-4" : "md:ml-4"
+                  )}>
+                    <img
+                      src={item.image || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&q=80'}
+                      className="h-80 w-full object-cover"
+                      referrerPolicy="no-referrer"
+                      alt={item.title}
+                    />
+                  </div>
+                </div>
+
+                <div className={cn(
+                  "w-full md:w-1/2 px-8 mt-8 md:mt-0 text-center",
+                  i % 2 === 0 ? "md:text-left" : "md:text-right"
+                )}>
+                  <span className="font-serif text-2xl italic text-rose-300 block mb-2">{item.date}</span>
+                  <h3 className="font-serif text-3xl font-bold text-slate-900 mb-4">{item.title}</h3>
+                  <p className="text-lg leading-relaxed text-slate-600 font-sans">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -269,97 +359,79 @@ function EventSection({ content, theme }: any) {
   const formatEventDate = (dateStr: string) => {
     if (!dateStr) return '';
     try {
-      return new Date(dateStr).toLocaleString('vi-VN', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
+      const d = new Date(dateStr);
+      return {
+        time: d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+        date: d.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      };
     } catch {
-      return dateStr;
+      return { time: '', date: dateStr };
     }
   };
 
   const sideLabel: Record<string, string> = {
-    BRIDE: '👰 Nhà Gái',
-    GROOM: '🤵 Nhà Trai',
+    BRIDE: 'Lễ Vu Quy',
+    GROOM: 'Lễ Thành Hôn',
   };
 
   return (
-    <section className="bg-amber-50 py-24">
-      <div className="container mx-auto max-w-5xl px-6">
+    <section className="bg-slate-50 py-32 relative overflow-hidden">
+      <FloralOrnament />
+      <div className="container mx-auto max-w-6xl px-6 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center"
+          className="text-center mb-20"
         >
-          <CalendarDays className="mx-auto mb-4 h-10 w-10" style={{ color: theme.primary }} />
-          <h2 className="text-4xl font-bold text-slate-900">{content.title || 'Sự kiện đám cưới'}</h2>
-          <p className="mt-3 text-slate-600">Thông tin chi tiết về các buổi lễ cưới.</p>
+          <p className="font-cursive text-3xl text-rose-300 mb-2">The Wedding</p>
+          <h2 className="font-serif text-5xl font-bold text-slate-900 uppercase tracking-widest">Thông tin buổi lễ</h2>
+          <Ornament />
         </motion.div>
 
-        {events.length === 0 && (
-          <p className="mt-12 text-center text-slate-400 italic">Chưa có sự kiện nào.</p>
-        )}
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-2">
+          {events.map((ev: any, i: number) => {
+            const dateInfo = formatEventDate(ev.date) as any;
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: i === 0 ? -50 : 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 1 }}
+                className="group relative overflow-hidden rounded-[3rem] bg-white p-12 text-center shadow-2xl ring-1 ring-slate-100"
+              >
+                <div className="absolute top-0 left-1/2 h-1 w-32 -translate-x-1/2 bg-rose-300" />
+                
+                <h3 className="font-cursive text-4xl text-rose-300 mb-4">
+                  {sideLabel[ev.side] || ev.title}
+                </h3>
+                
+                <div className="mb-10 flex flex-col items-center">
+                  <Clock className="mb-4 h-8 w-8 text-rose-200" />
+                  <p className="font-serif text-4xl font-bold text-slate-900 mb-2">{dateInfo.time}</p>
+                  <p className="font-sans text-sm tracking-[0.2em] uppercase text-slate-400">{dateInfo.date}</p>
+                </div>
 
-        <div className="mt-14 grid grid-cols-1 gap-8 md:grid-cols-2">
-          {events.map((ev: any, i: number) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.15 }}
-              className="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm"
-            >
-              {/* Card header */}
-              <div className="bg-gradient-to-r from-amber-400 to-rose-400 px-6 py-4">
-                <span className="text-sm font-bold text-white/80">
-                  {sideLabel[ev.side] ?? ev.side}
-                </span>
-                <h3 className="mt-1 text-2xl font-bold text-white">{ev.title}</h3>
-              </div>
+                <div className="mb-10 flex flex-col items-center">
+                  <MapPin className="mb-4 h-8 w-8 text-rose-200" />
+                  <p className="font-serif text-2xl font-bold text-slate-900 mb-2">{ev.location}</p>
+                  <p className="font-sans text-sm leading-relaxed text-slate-500 max-w-xs">{ev.address}</p>
+                </div>
 
-              {/* Card body */}
-              <div className="space-y-4 px-6 py-5">
-                {ev.date && (
-                  <div className="flex items-start gap-3">
-                    <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-slate-400">Thời gian</p>
-                      <p className="text-sm font-medium text-slate-800">{formatEventDate(ev.date)}</p>
-                    </div>
-                  </div>
-                )}
-                {ev.location && (
-                  <div className="flex items-start gap-3">
-                    <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-rose-400" />
-                    <div>
-                      <p className="text-xs font-semibold uppercase text-slate-400">Địa điểm</p>
-                      <p className="text-sm font-medium text-slate-800">{ev.location}</p>
-                      {ev.address && (
-                        <p className="mt-0.5 text-sm text-slate-500">{ev.address}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
                 {ev.mapUrl && (
                   <a
                     href={ev.mapUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-4 py-2 text-sm font-semibold text-amber-600 transition-colors hover:bg-amber-100"
+                    className="inline-flex items-center gap-3 rounded-full bg-rose-50 px-8 py-3 text-sm font-bold uppercase tracking-widest text-rose-600 transition-all hover:bg-rose-600 hover:text-white"
                   >
-                    <MapPin size={14} />
-                    Xem bản đồ
+                    <span>Xem bản đồ</span>
                   </a>
                 )}
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </div>
     </section>
