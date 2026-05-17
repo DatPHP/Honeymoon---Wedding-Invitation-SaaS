@@ -24,6 +24,81 @@ function FloralOrnament() {
   );
 }
 
+function MusicPlayer() {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useState(new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'))[0];
+
+  useEffect(() => {
+    audioRef.loop = true;
+    return () => {
+      audioRef.pause();
+    };
+  }, [audioRef]);
+
+  const toggle = () => {
+    if (isPlaying) {
+      audioRef.pause();
+    } else {
+      audioRef.play().catch(() => alert('Hãy nhấp chuột vào đâu đó trên trang trước khi phát nhạc.'));
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  return (
+    <button 
+      onClick={toggle}
+      className={cn(
+        "fixed bottom-8 left-8 z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-2xl transition-all hover:scale-110 active:scale-95",
+        isPlaying ? "text-rose-500 animate-pulse" : "text-slate-400"
+      )}
+    >
+      {isPlaying ? <Volume2 size={24} /> : <VolumeX size={24} />}
+      {isPlaying && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500"
+        >
+          <Music size={8} className="text-white" />
+        </motion.div>
+      )}
+    </button>
+  );
+}
+
+function FallingHearts() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
+      {[...Array(15)].map((_, i) => (
+        <motion.div
+          key={i}
+          initial={{ 
+            top: -20, 
+            left: `${Math.random() * 100}%`,
+            opacity: 0,
+            scale: Math.random() * 0.5 + 0.5,
+            rotate: Math.random() * 360
+          }}
+          animate={{ 
+            top: '110%',
+            opacity: [0, 0.4, 0.4, 0],
+            rotate: Math.random() * 720
+          }}
+          transition={{ 
+            duration: Math.random() * 10 + 10,
+            repeat: Infinity,
+            delay: Math.random() * 15,
+            ease: "linear"
+          }}
+          className="absolute text-rose-300"
+        >
+          <Heart size={Math.random() * 20 + 10} fill="currentColor" />
+        </motion.div>
+      ))}
+    </div>
+  );
+}
+
 export default function PublicWedding({ project }: any) {
   if (!project) return null;
   const sections = Array.isArray(project.sections) ? project.sections : [];
@@ -36,6 +111,7 @@ export default function PublicWedding({ project }: any) {
       className={cn("min-h-screen bg-white selection:bg-rose-100 selection:text-rose-600 overflow-x-hidden", fontClass)}
       style={{ '--primary': theme.primary } as any}
     >
+      <MusicPlayer />
       {sections.map((section: any) => (
         <SectionRenderer key={section.id} section={section} theme={theme} />
       ))}
@@ -123,6 +199,7 @@ function HeroSection({ content, theme }: any) {
   return (
     <section className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white">
       <FloralOrnament />
+      <FallingHearts />
       
       {/* Decorative Ornaments */}
       <div className="absolute top-0 left-0 w-full h-full opacity-5 pointer-events-none">

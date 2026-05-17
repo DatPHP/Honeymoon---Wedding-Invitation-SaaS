@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Heart, 
@@ -21,15 +22,80 @@ import {
   UserX,
 } from 'lucide-react';
 import Editor from './components/Editor/Editor';
+import PublicWedding from './components/Wedding/PublicWedding';
 import { cn } from './lib/utils';
 
 const queryClient = new QueryClient();
 
 export default function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<AppContent />} />
+          <Route path="/wedding/:slug" element={<PublishedWeddingPage />} />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+}
+
+function PublishedWeddingPage() {
+  const { slug } = useParams();
+  const [project, setProject] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchWedding = async () => {
+      try {
+        const res = await fetch(`/api/wedding/${slug}`);
+        if (!res.ok) throw new Error('Không tìm thấy thiệp cưới');
+        const data = await res.json();
+        setProject(data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchWedding();
+  }, [slug]);
+
+  if (loading) return (
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="flex flex-col items-center">
+        <Heart className="h-12 w-12 animate-pulse text-rose-300 fill-rose-300" />
+        <p className="mt-4 font-serif text-slate-400">Đang tải...</p>
+      </div>
+    </div>
+  );
+
+  if (error || !project) return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6 text-center">
+      <div className="max-w-md">
+        <Heart className="mx-auto h-16 w-16 text-slate-200" />
+        <h1 className="mt-6 font-serif text-3xl font-bold text-slate-900">Oops!</h1>
+        <p className="mt-4 text-slate-600">{error || 'Trang này không tồn tại hoặc đã bị gỡ bỏ.'}</p>
+        <button 
+          onClick={() => window.location.href = '/'}
+          className="mt-8 rounded-full bg-rose-600 px-8 py-3 font-bold text-white shadow-xl shadow-rose-100"
+        >
+          Trở về trang chủ
+        </button>
+      </div>
+    </div>
+  );
+
+  return <PublicWedding project={project} />;
+}
+
+function AppContent() {
   const [user, setUser] = useState<any>(null);
   const [view, setView] = useState<'landing' | 'auth' | 'dashboard' | 'editor' | 'templates' | 'guests'>('landing');
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const location = useLocation();
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -47,22 +113,20 @@ export default function App() {
   };
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-        <Navbar user={user} logout={logout} setView={setView} />
-        
-        <main className="container mx-auto px-4 py-8">
-          <AnimatePresence mode="wait">
-            {view === 'landing' && <Landing key="landing" setView={setView} />}
-            {view === 'auth' && <Auth key="auth" setUser={setUser} setView={setView} />}
-            {view === 'dashboard' && <Dashboard key="dashboard" user={user} setView={setView} setSelectedProject={setSelectedProject} />}
-            {view === 'editor' && <Editor key="editor" project={selectedProject} setView={setView} />}
-            {view === 'templates' && <TemplateGallery key="templates" setView={setView} onSelect={setSelectedTemplate} />}
-            {view === 'guests' && <GuestManagement key="guests" project={selectedProject} setView={setView} />}
-          </AnimatePresence>
-        </main>
-      </div>
-    </QueryClientProvider>
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <Navbar user={user} logout={logout} setView={setView} />
+      
+      <main className="container mx-auto px-4 py-8">
+        <AnimatePresence mode="wait">
+          {view === 'landing' && <Landing key="landing" setView={setView} />}
+          {view === 'auth' && <Auth key="auth" setUser={setUser} setView={setView} />}
+          {view === 'dashboard' && <Dashboard key="dashboard" user={user} setView={setView} setSelectedProject={setSelectedProject} />}
+          {view === 'editor' && <Editor key="editor" project={selectedProject} setView={setView} />}
+          {view === 'templates' && <TemplateGallery key="templates" setView={setView} onSelect={setSelectedTemplate} />}
+          {view === 'guests' && <GuestManagement key="guests" project={selectedProject} setView={setView} />}
+        </AnimatePresence>
+      </main>
+    </div>
   );
 }
 

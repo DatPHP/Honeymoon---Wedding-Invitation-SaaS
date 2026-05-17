@@ -664,6 +664,15 @@ function SectionIcon({ type }: { type: string }) {
 
 // ─── Main Editor ──────────────────────────────────────────────────────────────
 
+function FloralOrnament() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden opacity-10">
+      <div className="absolute -top-10 -left-10 h-64 w-64 rounded-full border-[20px] border-rose-200" />
+      <div className="absolute -bottom-10 -right-10 h-64 w-64 rounded-full border-[20px] border-amber-200" />
+    </div>
+  );
+}
+
 export default function Editor({ project: initialProject, setView }: any) {
   const [project, setProject] = useState(() => normalizeProject(initialProject));
   const [activeSectionId, setActiveSectionId] = useState<string>(project.sections[0]?.id);
